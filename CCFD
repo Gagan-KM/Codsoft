@@ -1,0 +1,103 @@
+                                                                        CREDIT CARD FRAUD DETECTION
+import numpy as np
+import pandas as pd
+import sklearn
+import matplotlib.pyplot as  plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report,accuracy_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+
+trd = pd.read_csv(r'C:/Users/gagan/Downloads/archive/fraudTrain.csv')
+trd.head(5)
+
+# Dataset Infromation
+trd.info()
+
+## Checking for number of missing values in each column
+trd.isnull().sum()
+
+## Exploratory Data Analysis
+### Distribution of Legit and Fraudlent transaction
+trd['is_fraud'].value_counts()
+LABELS = ["Normal", "Fraud"]
+count_classes = pd.Series(trd['is_fraud']).value_counts(sort=True)
+count_classes.plot(kind = 'bar', rot=0)
+plt.title("Transaction Class Distribution")
+plt.xticks(range(2), LABELS)
+plt.xlabel("Class")
+plt.ylabel("Frequency")
+### Seperating the data for Analysis
+legit = trd[trd.is_fraud==0]
+fraud = trd[trd.is_fraud==1]
+legit.shape
+fraud.shape
+
+### Statistical measures of the data
+legit.amt.describe()
+fraud.amt.describe()
+f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+f.suptitle('Amount per transaction by class')
+bins = 50
+ax1.hist(fraud.amt, bins = bins)
+ax1.set_title('Fraud')
+ax2.hist(legit.amt, bins = bins)
+ax2.set_title('Legit')
+plt.xlabel('Amount ($)')
+plt.ylabel('Number of Transactions')
+plt.xlim((0, 20000))
+plt.yscale('log')
+plt.show()
+
+### Undersampling
+new_legit = legit.sample(n=492)
+new_legit
+new_df = pd.concat([new_legit,fraud], axis=0)
+new_df.sample(6)
+new_df['is_fraud'].value_counts()
+trd = new_df.drop(columns='is_fraud', axis=1)
+ted = new_df['is_fraud']
+print(trd)
+print(ted)
+numerical_columns = ['amt', 'lat', 'long', 'city_pop', 'unix_time', 'merch_lat', 'merch_long']
+trd = trd[numerical_columns]
+print(trd.head(5))
+for i in trd:
+    print(i)
+X_train, X_test, Y_train, Y_test = train_test_split(trd, ted, test_size=0.1, random_state=2)
+print(X_train.shape, X_test.shape)
+## Model Training Using LogisticRegression
+model = LogisticRegression()
+model.fit(X_train.values, Y_train)
+X_train_prediction = model.predict(X_train.values)
+training_data_accuracy = accuracy_score(X_train_prediction, Y_train)
+print('Accuracy on Training data : ', training_data_accuracy)
+X_test_prediction = model.predict(X_test.values)
+test_data_accuracy = accuracy_score(X_test_prediction, Y_test)
+print('Accuracy on Testing data: ',test_data_accuracy)
+from sklearn.preprocessing import StandardScaler
+def predict_credit_card_scam(input_data):
+    input_data = input_data[numerical_columns]
+    input_data_scaled = sklearn.preprocessing.StandardScaler().fit_transform(input_data)
+    predictions = model.predict(input_data_scaled)
+    return predictions
+ted = pd.read_csv(r'C:/Users/gagan/Downloads/archive/fraudTest.csv')
+ted2 = ted
+numerical_columns = ['amt', 'lat', 'long', 'city_pop', 'unix_time', 'merch_lat', 'merch_long']
+ted = ted[numerical_columns]
+ted.columns = numerical_columns
+predictions = predict_credit_card_scam(ted)
+for i in predictions:
+    if i==1:
+        print(f"Fraud {i}")
+    else:
+        print(f"Genuine {i}")
+prediction_counts = ted2['predicted'].value_counts()
+plt.bar(prediction_counts.index, prediction_counts.values)
+plt.xlabel('Prediction')
+plt.ylabel('Count')
+plt.xticks([0, 1], ['Genuine', 'Fraud'])
+plt.title('Predicted Transactions')
+plt.show()
